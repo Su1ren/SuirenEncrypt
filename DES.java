@@ -13,6 +13,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Scanner;
 
+/**
+ * In the project, DES is used to encrypt M || RSA(H(M), RKa)
+ */
 public class DES {
     private static final String SUFFIX = ".des";
     private static final int KEY_LENGTH = 56;
@@ -154,6 +157,7 @@ public class DES {
      */
     private static String secretKeyToString(SecretKey secretKey) {
         return Base64.getEncoder().encodeToString(secretKey.getEncoded());
+        // return new String(secretKey.getEncoded());
     }
 
     /**
