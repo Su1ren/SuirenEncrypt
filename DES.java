@@ -1,7 +1,10 @@
+import org.junit.Test;
+
 import javax.crypto.CipherOutputStream;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.Cipher;
+import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,7 +28,7 @@ public class DES {
         System.out.println("Key: " + key);
 
         SecretKey secretKey = new SecretKeySpec(key.getBytes(), "DES");
-        Cipher cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         byte[] ciphertext = cipher.doFinal(plaintext.getBytes());
 
@@ -60,7 +63,7 @@ public class DES {
     private static String decryptWithKey(String ciphertext, String key) throws Exception {
         System.out.println("Decrypting DES...");
 
-        Cipher cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("DES");
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getBytes(), "DES"));
         byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(ciphertext));
         return new String(decrypted);
@@ -69,7 +72,7 @@ public class DES {
     public static void encryptFile(String inputFile, String outputFile, String secretKey) throws Exception {
         SecretKey key = new SecretKeySpec(secretKey.getBytes(), "DES");
 
-        Cipher cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("DES");
         cipher.init(Cipher.ENCRYPT_MODE, key);
 
         try (FileInputStream fis = new FileInputStream(inputFile);
@@ -86,7 +89,7 @@ public class DES {
     public static void decryptFile(String inputFile, String outputFile, String secretKey) throws Exception {
         SecretKey key = new SecretKeySpec(secretKey.getBytes(), "DES");
 
-        Cipher cipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance("DES");
         cipher.init(Cipher.DECRYPT_MODE, key);
 
         try (FileInputStream fis = new FileInputStream(inputFile);
@@ -99,4 +102,13 @@ public class DES {
             }
         }
     }
+
+    public static void main(String[] args) throws Exception {
+        String plaintext = "Hello, world!"; // 要加密的字符串
+        String secretKey = "12345678"; // 加密密钥
+        System.out.println(encryptWithKey(plaintext, secretKey));
+        String decrypted = decryptWithKey(encryptWithKey(plaintext, secretKey), secretKey);
+        assert decrypted.equals(plaintext);
+    }
+
 }

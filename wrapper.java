@@ -13,6 +13,6 @@
  * ||: concatenation
  */
 
-public class encrypt {
+public class wrapper {
 
 }
