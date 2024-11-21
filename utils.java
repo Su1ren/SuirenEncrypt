@@ -34,5 +34,4 @@ public class utils {
         return new String(readContent(file));
     }
 
-
 }
