@@ -19,12 +19,20 @@ public class AES {
     private static final int KEY_LENGTH = 128;
     private static final int BYTES = KEY_LENGTH / 8;
 
-    public static String encryptWithKey(String plaintext, String key) throws Exception {
-        System.out.println("Encrypting with AES...");
-        System.out.println("Key: " + key);
 
+
+    public static String encryptWithSeed(String plaintext, String seed) throws Exception {
+        System.out.println("Encrypting with AES...");
+        System.out.println("Seed: " + seed);
+
+        SecretKey key = new SecretKeySpec(seed.getBytes(), "AES");
+        return encryptWithKey(plaintext, key);
+    }
+
+    public static String encryptWithKey(String plaintext, SecretKey key) throws Exception {
+        System.out.println("Key: " + secretKeyToString(key));
         Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getBytes(), "AES"));
+        cipher.init(Cipher.ENCRYPT_MODE, key);
         byte[] ciphertext = cipher.doFinal(plaintext.getBytes());
 
         return Base64.getEncoder().encodeToString(ciphertext);
@@ -34,32 +42,33 @@ public class AES {
         return encryptWithKey(plaintext, generateKey());
     }
 
-    public static String decryptWithKey(String ciphertext, String key) throws Exception {
+    public static String decryptWithKey(String ciphertext, SecretKey key) throws Exception {
         System.out.println("Decrypting AES...");
+        System.out.println("Key: " + secretKeyToString(key));
 
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getBytes(), "AES"));
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key);
         byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(ciphertext));
         return new String(decrypted);
     }
 
-    public static String generateKey() throws Exception {
+    public static SecretKey generateKey() throws Exception {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
         keyGen.init(KEY_LENGTH, new SecureRandom()); // 128 位密钥
         SecretKey key = keyGen.generateKey();
-        return keyLengthProcess(secretKeyToString(key));
+        return key;
     }
 
     private static String secretKeyToString(SecretKey secretKey) {
         return Base64.getEncoder().encodeToString(secretKey.getEncoded());
     }
 
-    public static void encryptFile(String key, String inputFile, String outputFile) throws Exception {
+    public static void encryptFile(SecretKey key, String inputFile, String outputFile) throws Exception {
         System.out.println("Encrypting file..." + inputFile);
-        System.out.println("Key: " + key);
+        System.out.println("Key: " + secretKeyToString(key));
 
         Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getBytes(), "AES"));
+        cipher.init(Cipher.ENCRYPT_MODE, key);
 
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(outputFile);
@@ -72,11 +81,12 @@ public class AES {
         }
     }
 
-    public static void decryptFile(String key, String inputFile, String outputFile) throws Exception {
+    public static void decryptFile(SecretKey key, String inputFile, String outputFile) throws Exception {
         System.out.println("Decrypting file..." + inputFile);
+        System.out.println("Key: " + secretKeyToString(key));
 
         Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getBytes(), "AES"));
+        cipher.init(Cipher.DECRYPT_MODE, key);
 
         try (FileInputStream fis = new FileInputStream(inputFile);
              FileOutputStream fos = new FileOutputStream(outputFile);
@@ -89,20 +99,17 @@ public class AES {
         }
     }
 
-    private static String keyLengthProcess(String key) {
-        if (key.length() < BYTES) {
-            return key + "0".repeat(BYTES - key.length());
-        }
-        return key.substring(0, BYTES);
+    private static SecretKey base64ToSecretKey(String base64Key) {
+        return new SecretKeySpec(Base64.getDecoder().decode(base64Key), "AES");
     }
 
     @Test
     public void testString() throws Exception {
         String plaintext = "Hello, world!"; // 要加密的字符串
-        String secretKey = keyLengthProcess("12345678"); // 加密密钥
-        System.out.println(encryptWithKey(plaintext, secretKey));
-
-        String decrypted = decryptWithKey(encryptWithKey(plaintext, secretKey), secretKey);
+        String seed = "1234567890123456"; // 加密密钥
+        System.out.println(encryptWithSeed(plaintext, seed));
+        SecretKey key = new SecretKeySpec(seed.getBytes(), "AES");
+        String decrypted = decryptWithKey(encryptWithSeed(plaintext, seed), key);
         assertEquals(plaintext, decrypted);
     }
 
@@ -113,7 +120,7 @@ public class AES {
             String ciphertext = encryptWithGenKey(plaintext);
             Scanner scanner = new Scanner(System.in);
             String key = scanner.nextLine();
-            String decrypted = decryptWithKey(ciphertext, key);
+            String decrypted = decryptWithKey(ciphertext, base64ToSecretKey(key));
             assertEquals(plaintext, decrypted);
         } catch (Exception e) {
             e.printStackTrace();
@@ -122,7 +129,8 @@ public class AES {
 
     @Test
     public void testFile() throws Exception {
-        String secretKey = keyLengthProcess("SuirenEncrypt");
+        String seed = "SuirenEncrypt123";
+        SecretKey secretKey = new SecretKeySpec(seed.getBytes(), "AES");
         try {
             encryptFile(secretKey, "README.md", "README.aes");
             decryptFile(secretKey, "README.aes", "README1.md");
